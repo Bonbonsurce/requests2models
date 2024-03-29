@@ -1,0 +1,108 @@
+Напиши мне страницу аутентификации в html, с фреймворком node js   
+
+<!DOCTYPE html>
+<html lang=“en”>
+<head>
+<meta charset=“UTF-8”>
+<title>Node JS Authentication Page</title>
+</head>
+<body>
+<h1>Node JS Authentication</h1>
+<!-- Login form -->
+<form action="/login" method="POST">
+  <div>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username"/>
+  </div>
+  <div>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password"/>
+  </div>
+  
+  <!-- Submit button -->
+  <input type="submit" value="Login" />
+</form>
+
+<p>Not registered? <a href="/register">Register here</a></p>
+<!-- The script src attribute should be set to the URL of your Node.js server -->
+<script src=“http://localhost:3000/bundle.js”></script>
+ Продолжи   
+</body>
+</html>
+В этом примере предполагается, что ваш Node.js сервер прослушивает порт 3000 и обслуживает файл bundle.js. Если вы используете другой порт или сервер, измените значение атрибута src соответствующим образом.
+ Напиши к этому html css файл   
+styles.css:
+body {
+  background-color: #202025;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  margin: 0;
+  padding: 10px;
+  text-align: center;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 300px;
+  margin: auto;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input {
+  width: 100%;
+  padding: 7px 10px;
+  margin-top: 5px;
+  border: none;
+  outline: none;
+}
+
+button {
+  background: none;
+ Я хочу в светло-синем оттенке   
+Попробуйте использовать эти значения CSS:
+body {
+background-color: rgb(31, 31, 41); /* Серый цвет /
+color: white; / Текст белого цвета /
+font-family: Arial, sans-serif; / Шрифт Arial или без засечек */
+}
+h1 {
+margin: 0; /* Отступ сверху /
+padding: 10px; / Поля вокруг текста /
+text-align: center; / Выравнивание текста по центру */
+}
+form {
+display: flex; /* Отображение как Flex /
+flex-direction: column; / Направление сверху вниз /
+align-items: center; / Размещение элементов по центру /
+width: 300px; / Ширина /
+margin: auto; / Автоматическое верхнее и нижнее поля /
+border-radius: 5px; / Закруглённые углы /
+box-shadow: x y blur spread color; / Тень */
+}
+label {
+display: block; /* Блочный элемент */
+ Продолжи   
+margin-bottom: 5px; /* Интервал между элементами */
+}
+input {
+width: 100%; /* Занимает всю ширину /
+padding: 7px; / Внутренние поля /
+margin-top: 5px; / Верхнее поле /
+border: none; / Нет границы /
+outline: none; / Без контура */
+}
+button {
+background: rgba(51, 51, 61, .5); /* Светло-синий фон /
+/ Другие свойства кнопки… */
+}
