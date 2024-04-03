@@ -587,3 +587,96 @@ EXECUTE FUNCTION delete_friend_request_on_decline();
 
 
 Этот триггер будет вызываться каждый раз, когда обновляется статус запроса в таблице "Друзья". Если новый статус становится "declined", то соответствующая запись будет автоматически удалена из таблицы.
+
+-------------------------------------------------------------------
+https://chat.openai.com/share/8685c9e1-b36f-4aa2-807d-90d6bfe58fca
+----------СИНТАКСИЧЕСКИЙ ТЕСТ-----------------
+**You:**
+
+Ты глвныый разробатчик прилажнения "Вконтакте", ты проектаравал модель БД для этого приложения.
+Я пишу учебный веб проект "Месенджер", похож на "Вконтакте". Спроектируй модель базы данных для моего веб-рисурса в виде таблиц. 
+составь сотвевовующие зпросы на создание базы данных и таблиц в постгресс
+
+* * *
+
+**ChatGPT:**
+
+Хорошо, вот предложенная модель базы данных для вашего веб-проекта "Мессенджер", похожего на "Вконтакте". Эта модель включает в себя основные компоненты, необходимые для функционирования мессенджера:
+
+Таблица "Пользователи":
+
+user_id (PK): Уникальный идентификатор пользователя
+username: Имя пользователя
+email: Адрес электронной почты пользователя
+password: Хэшированный пароль пользователя
+created_at: Дата и время создания учетной записи
+
+Таблица "Диалоги":
+
+dialog_id (PK): Уникальный идентификатор диалога
+dialog_name: Название диалога (необязательно)
+created_at: Дата и время создания диалога
+
+Таблица "Сообщения":
+
+message_id (PK): Уникальный идентификатор сообщения
+dialog_id (FK): Ссылка на диалог, к которому относится сообщение
+sender_id (FK): Ссылка на отправителя сообщения
+recipient_id (FK): Ссылка на получателя сообщения
+message_text: Текст сообщения
+sent_at: Дата и время отправки сообщения
+
+Таблица "Контакты":
+
+contact_id (PK): Уникальный идентификатор контакта
+user_id (FK): Ссылка на пользователя
+contact_user_id (FK): Ссылка на контакт пользователя
+added_at: Дата и время добавления контакта
+
+Это базовая модель, и ее можно дополнить другими элементами в соответствии с требованиями вашего проекта.
+
+Теперь давайте создадим соответствующие запросы для создания базы данных и таблиц в PostgreSQL:
+
+sql
+-- Создание базы данных для мессенджера
+CREATE DATABASE messenger;
+
+-- Использование созданной базы данных
+\c messenger;
+
+-- Создание таблицы "Пользователи"
+CREATE TABLE Users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создание таблицы "Диалоги"
+CREATE TABLE Dialogs (
+    dialog_id SERIAL PRIMARY KEY,
+    dialog_name VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создание таблицы "Сообщения"
+CREATE TABLE Messages (
+    message_id SERIAL PRIMARY KEY,
+    dialog_id INT REFERENCES Dialogs(dialog_id) ON DELETE CASCADE,
+    sender_id INT REFERENCES Users(user_id) ON DELETE CASCADE,
+    recipient_id INT REFERENCES Users(user_id) ON DELETE CASCADE,
+    message_text TEXT NOT NULL,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создание таблицы "Контакты"
+CREATE TABLE Contacts (
+    contact_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES Users(user_id) ON DELETE CASCADE,
+    contact_user_id INT REFERENCES Users(user_id) ON DELETE CASCADE,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+Эти запросы создадут базу данных "messenger" и все необходимые таблицы с соответствующими полями.
