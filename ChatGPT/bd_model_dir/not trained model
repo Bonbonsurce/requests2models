@@ -549,3 +549,238 @@ EXECUTE FUNCTION delete_friend_request_on_decline();
 
 
 Этот запрос создаст триггер, который будет автоматически удалять запись из таблицы Friends, когда статус запроса дружбы изменяется на 'declined'.
+
+
+
+
+
+----------------------------------------
+-----------------ТЕСТ НА СЛОЖНОСТЬ ЗАПРОСОВ----------------------
+
+https://chat.openai.com/share/13f0cbd6-2c3a-4525-b638-0c633c339fcb
+
+**You:**
+
+Спроектируй модель базы данных для веб-приложения, похожего на "Вконтакте"
+напиши все запросы в postresql
+напиши еще дополнительный функционал
+
+* * *
+
+**ChatGPT:**
+
+Для проектирования модели базы данных для веб-приложения, похожего на "Вконтакте", мы должны учитывать основные функциональные элементы социальной сети, такие как пользователи, сообщества, друзья, сообщения, комментарии и т. д.
+
+Вот пример базовой модели данных:
+
+Пользователи (Users):
+user_id (PK)
+имя
+фамилия
+дата рождения
+электронная почта
+пароль
+дата регистрации
+другие персональные данные
+sql
+CREATE TABLE Users (
+    user_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    date_of_birth DATE,
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(100),
+    registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Добавьте другие поля по необходимости
+);
+
+Сообщества (Communities):
+community_id (PK)
+название
+описание
+дата создания
+создатель (внешний ключ, связанный с Users)
+sql
+CREATE TABLE Communities (
+    community_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    description TEXT,
+    creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    creator_id INT REFERENCES Users(user_id)
+    -- Другие поля
+);
+
+Друзья (Friends):
+friend_id (PK)
+user_id1 (внешний ключ, связанный с Users)
+user_id2 (внешний ключ, связанный с Users)
+статус (принято, ожидание, отклонено)
+sql
+CREATE TABLE Friends (
+    friend_id SERIAL PRIMARY KEY,
+    user_id1 INT REFERENCES Users(user_id),
+    user_id2 INT REFERENCES Users(user_id),
+    status VARCHAR(20)
+    -- Другие поля
+);
+
+Сообщения (Messages):
+message_id (PK)
+отправитель (внешний ключ, связанный с Users)
+получатель (внешний ключ, связанный с Users)
+текст сообщения
+дата отправки
+sql
+CREATE TABLE Messages (
+    message_id SERIAL PRIMARY KEY,
+    sender_id INT REFERENCES Users(user_id),
+    receiver_id INT REFERENCES Users(user_id),
+    message_text TEXT,
+    send_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- Другие поля
+);
+
+Комментарии (Comments):
+comment_id (PK)
+user_id (внешний ключ, связанный с Users)
+post_id (внешний ключ, связанный с Posts)
+текст комментария
+дата создания
+sql
+CREATE TABLE Comments (
+    comment_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES Users(user_id),
+    post_id INT REFERENCES Posts(post_id),
+    comment_text TEXT,
+    creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- Другие поля
+);
+
+
+Это базовая структура. Дополнительный функционал может включать в себя:
+
+Лайки и репосты для сообщений и комментариев
+Функции поиска и фильтрации для пользователей и сообществ
+Система уведомлений
+Альбомы для фотографий
+Функции групповых чатов
+Возможность организации мероприятий и опросов
+Разделение контента на публичный и приватный
+И многое другое, в зависимости от конкретных требований вашего веб-приложения.
+
+* * *
+
+**You:**
+
+расширь функционал
+напиши запросы на заполнение
+
+* * *
+
+**ChatGPT:**
+
+Дополнительный функционал для социальной сети подобной "Вконтакте" может включать в себя следующее:
+
+Группы (Groups):
+group_id (PK)
+название
+описание
+дата создания
+администратор (внешний ключ, связанный с Users)
+sql
+CREATE TABLE Groups (
+    group_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    description TEXT,
+    creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    admin_id INT REFERENCES Users(user_id)
+    -- Другие поля
+);
+
+Посты (Posts):
+post_id (PK)
+user_id (внешний ключ, связанный с Users)
+текст поста
+дата публикации
+изображение (необязательно)
+sql
+CREATE TABLE Posts (
+    post_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES Users(user_id),
+    post_text TEXT,
+    post_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    image BYTEA -- Пример поля для хранения изображения в формате байтов
+    -- Другие поля
+);
+
+Лайки (Likes):
+like_id (PK)
+user_id (внешний ключ, связанный с Users)
+post_id (внешний ключ, связанный с Posts)
+sql
+CREATE TABLE Likes (
+    like_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES Users(user_id),
+    post_id INT REFERENCES Posts(post_id)
+    -- Другие поля
+);
+
+Репосты (Reposts):
+repost_id (PK)
+user_id (внешний ключ, связанный с Users)
+original_post_id (внешний ключ, связанный с Posts)
+дата репоста
+sql
+CREATE TABLE Reposts (
+    repost_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES Users(user_id),
+    original_post_id INT REFERENCES Posts(post_id),
+    repost_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- Другие поля
+);
+
+
+Примеры запросов на заполнение таблиц данными:
+
+Заполнение таблицы пользователей:
+sql
+INSERT INTO Users (first_name, last_name, date_of_birth, email, password)
+VALUES ('Иван', 'Иванов', '1990-05-15', 'ivan@example.com', 'password123');
+
+INSERT INTO Users (first_name, last_name, date_of_birth, email, password)
+VALUES ('Петр', 'Петров', '1985-08-20', 'petr@example.com', 'qwerty456');
+
+-- Добавьте другие запросы для заполнения таблицы пользователей по необходимости
+
+Заполнение таблицы групп:
+sql
+INSERT INTO Groups (name, description, admin_id)
+VALUES ('Группа по программированию', 'Обсуждаем вопросы программирования', 1);
+
+INSERT INTO Groups (name, description, admin_id)
+VALUES ('Группа любителей кино', 'Обсуждаем новинки киноиндустрии', 2);
+
+-- Добавьте другие запросы для заполнения таблицы групп по необходимости
+
+Заполнение таблицы постов:
+sql
+INSERT INTO Posts (user_id, post_text, post_date)
+VALUES (1, 'Привет, мир!', CURRENT_TIMESTAMP);
+
+INSERT INTO Posts (user_id, post_text, post_date)
+VALUES (2, 'Сегодня посмотрел отличный фильм!', CURRENT_TIMESTAMP);
+
+-- Добавьте другие запросы для заполнения таблицы постов по необходимости
+
+Заполнение таблицы лайков:
+sql
+INSERT INTO Likes (user_id, post_id)
+VALUES (2, 1);
+
+INSERT INTO Likes (user_id, post_id)
+VALUES (1, 2);
+
+-- Добавьте другие запросы для заполнения таблицы лайков по необходимости
+
+
+Это лишь примеры запросов на заполнение. Реальные данные будут зависеть от конкретных потребностей вашего приложения и могут быть изменены в соответствии с этими потребностями.
