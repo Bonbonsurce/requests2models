@@ -1,0 +1,566 @@
+https://developers.sber.ru/link/gcsAYoDUmn
+
+
+
+Вот мой html-код:
+
+<div class="friend-list">
+            <select id="friend-select">
+                <option value="friend-block" selected>Друзья</option>
+                <option value="you-follow">Ваши подписки</option>
+                <option value="follow-to-you">Подписчики</option>
+            </select>
+            <div class="you-follow" id="follow">
+                <ul id="follow-list">
+
+
+
+        </ul>
+    </div>
+    <div class="friend-block" id="friends">
+        <ul id="friend-list">
+
+        </ul>
+    </div>
+    <div class="follow-to-you" id="followers">
+        <ul id="follower-list">
+
+        </ul>
+    </div>
+</div>
+Мне нужно при выборе одной опции из выпадающего списка отображать только один блок и заполнять его элементами li
+Напиши мне скрипт и только его
+
+3 мая в 15:34
+Для решения вашей задачи можно использовать JavaScript. Ниже приведен пример кода, который выполняет требуемую функциональность.
+
+
+// Получаем элемент select по его ID
+var select = document.getElementById('friend-select');
+
+// Добавляем обработчик события 'change' для select элемента
+select.addEventListener('change', function() {
+    // Получаем выбранный option
+    var selectedOption = this.options[this.selectedIndex];
+    
+    // Получаем соответствующие div блоки по их классам или ID
+    var friendBlock = document.getElementById('friends');
+    var youFollow = document.getElementById('follow');
+    var followToYou = document.getElementById('followers');
+    
+    // Очищаем содержимое каждого блока
+    friendBlock.innerHTML = '';
+    youFollow.innerHTML = '';
+    followToYou.innerHTML = '';
+    
+    // В зависимости от выбранного option показываем соответствующий блок
+    if (selectedOption.value === 'friend-block') {
+        friendBlock.style.display = 'block';
+    } else if (selectedOption.value === 'you-follow') {
+        youFollow.style.display = 'block';
+    } else if (selectedOption.value === 'follow-to-you') {
+        followToYou.style.display = 'block';
+    }
+});
+
+// Предположим, что у вас есть функция для добавления элементов li в нужный блок
+function addFriendsToList(listId, friends) {
+    var list = document.getElementById(listId);
+    for (var i = 0; i < friends.length; i++) {
+        var li = document.createElement('li');
+        li.textContent = friends[i];
+        list.appendChild(li);
+    }
+}
+
+// Пример использования функции добавления друзей в список
+addFriendsToList('friend-list', ['John', 'Anna', 'Pete']);
+addFriendsToList('follow-list', ['Mark', 'Emma', 'Jane']);
+addFriendsToList('follower-list', ['Sam', 'Beth', 'Luke']);
+Этот код предполагает, что у вас есть функция addFriendsToList, которая принимает идентификатор списка и массив имен друзей, и добавляет эти имена в список в виде элементов <li>. Вы должны будете реализовать эту функцию самостоятельно, исходя из того, откуда вы получаете данные для этих списков.
+
+
+
+
+теперь мне нужно в этом скрипте сделать автоматический запрос к серверу на получение данных и этими данными запонять соответствуюзие списки
+Создай путь /friends_info - по нему нужно сделать get запрос к бд
+
+3 мая в 15:42
+Для выполнения этой задачи вам потребуется создать API-сервис, который будет обрабатывать GET-запросы по пути /friends_info и возвращать данные о друзьях. Затем вы сможете использовать AJAX или Fetch API для отправки запросов к этому сервису и получения данных без перезагрузки страницы.
+
+Ниже приведен пример кода, который демонстрирует, как это может быть реализовано. Обратите внимание, что этот код является примером и требует дополнительной настройки и интеграции с вашим сервером.
+
+
+// Функция для отправки AJAX-запроса и обновления списка друзей
+function updateFriendList(listId, url) {
+    fetch(url) // Отправляем запрос к серверу
+        .then(response => response.json()) // Преобразуем ответ в JSON
+        .then(data => {
+            data.forEach(friend => {
+                var li = document.createElement('li');
+                li.textContent = friend;
+                document.getElementById(listId).appendChild(li);
+            });
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Добавляем обработчик события 'change' для select элемента
+document.getElementById('friend-select').addEventListener('change', function() {
+    var selectedOption = this.options[this.selectedIndex];
+    
+    switch (selectedOption.value) {
+        case 'friend-block':
+            updateFriendList('friend-list', '/friends_info?type=friend-block');
+            break;
+        case 'you-follow':
+            updateFriendList('follow-list', '/friends_info?type=you-follow');
+            break;
+        case 'follow-to-you':
+            updateFriendList('follower-list', '/friends_info?type=follow-to-you');
+            break;
+    }
+});
+В этом коде используется fetch() для отправки HTTP-запроса к серверу. Вам нужно будет заменить '/friends_info?type=friend-block' на реальный URL вашего API-сервиса, который возвращает данные о друзьях в нужном формате (например, JSON).
+
+Также важно отметить, что в реальном приложении вам потребуется реализовать безопасность и аутентификацию пользователей, чтобы предотвратить несанкционированный доступ к данным. Это может включать в себя использование токенов доступа, куки или других механизмов аутентификации.
+
+
+
+
+Мне нужно чтобы запрос friends_info возвращал информацию сразу про друзей, подписчиков и подписок
+У меня есть таблица friends, где есть следующие поля: id, user_id_1, user_id_2,
+Также есть таблица followers: где есть поля  id, user_id_1, user_id_2
+Мне нужно на сервере получить все значения которые связываются по user_id - идентификатору пользователя ИЗ СЕССИИ
+
+3 мая в 15:48
+Для того чтобы получить информацию о друзьях, подписчиках и подписках пользователя с идентификатором пользователя из сессии, вам необходимо выполнить SQL-запросы к обеим таблицам. Предполагая, что пользователь с идентификатором пользователя из сессии имеет идентификатор user_id, запросы могут выглядеть следующим образом:
+
+Запрос к таблице friends для получения информации о друзьях текущего пользователя:
+
+SELECT user_id_2 AS friend_id FROM friends WHERE user_id_1 = :user_id OR user_id_2 = :user_id;
+Запрос к таблице followers для получения информации о подписчиках текущего пользователя:
+
+SELECT user_id_2 AS follower_id FROM followers WHERE user_id_1 = :user_id AND user_id_2 != :user_id;
+Запрос к таблице followers для получения информации о подписках текущего пользователя:
+
+SELECT user_id_1 AS subscription_id FROM followers WHERE user_id_1 = :user_id AND user_id_2 = :user_id;
+Обратите внимание, что в каждом запросе используется условие WHERE для фильтрации записей, связанных с текущим пользователем. В плейсхолдерах :user_id следует подставить идентификатор пользователя из сессии.
+
+Чтобы объединить результаты всех трех запросов, вы можете использовать оператор UNION ALL для объединения результатов двух запросов к таблице friends и followers:
+
+
+(SELECT user_id_2 AS friend_id FROM friends WHERE user_id_1 = :user_id UNION ALL SELECT user_id_2 FROM friends WHERE user_id_2 = :user_id)
+UNION ALL
+(SELECT user_id_2 AS follower_id FROM followers WHERE user_id_1 = :user_id AND user_id_2 != :user_id)
+UNION ALL
+SELECT user_id_1 AS subscription_id FROM followers WHERE user_id_1 = :user_id AND user_id_2 = :user_id;
+Этот запрос вернет список идентификаторов друзей, подписчиков и подписок текущего пользователя.
+
+
+
+
+Мне нуэно сделать этим запросы на сервере в обработчике: app.get('/friends_info', async (req, res) => {
+    try {
+
+3 мая в 15:49
+Для выполнения SQL-запросов на сервере вы можете использовать библиотеку, такую как mysql или pg, в зависимости от того, какой тип базы данных вы используете. Ниже приведен пример использования библиотеки mysql в Node.js с использованием async/await для выполнения запросов:
+
+
+const mysql = require('mysql');
+
+app.get('/friends_info', async (req, res) => {
+    try {
+        // Создаем подключение к базе данных
+        const connection = await mysql.createConnection({
+            host: 'localhost',
+            user: 'yourusername',
+            password: 'yourpassword',
+            database: 'yourdatabase'
+        });
+
+        // Подключаемся к базе данных
+        await connection.connect();
+
+        // Запрос к таблице friends для получения информации о друзьях текущего пользователя
+        const [friends] = await connection.query('SELECT user_id_2 AS friend_id FROM friends WHERE user_id_1 = ? OR user_id_2 = ?', [req.session.user_id, req.session.user_id]);
+
+        // Запрос к таблице followers для получения информации о подписчиках текущего пользователя
+        const [followers] = await connection.query('SELECT user_id_2 AS follower_id FROM followers WHERE user_id_1 = ? AND user_id_2 != ?', [req.session.user_id, req.session.user_id]);
+
+        // Запрос к таблице followers для получения информации о подписках текущего пользователя
+        const [subscriptions] = await connection.query('SELECT user_id_1 AS subscription_id FROM followers WHERE user_id_1 = ? AND user_id_2 = ?', [req.session.user_id, req.session.user_id]);
+
+        // Объединяем результаты всех трех запросов
+        const allIds = [...friends, ...followers, ...subscriptions].map(row => row.friend_id || row.follower_id || row.subscription_id);
+
+        // Возвращаем результат клиенту
+        res.json(allIds);
+
+        // Закрываем соединение с базой данных
+        connection.end();
+    } catch (err) {
+        // Обработка ошибок
+        console.error('Error executing MySQL query', err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+В этом примере мы создаем подключение к базе данных MySQL, выполняем три SQL-запроса и объединяем результаты в одном массиве allIds. Затем мы отправляем этот массив клиенту в виде JSON. Обратите внимание, что вам нужно будет заменить 'yourusername', 'yourpassword' и 'yourdatabase' на реальные учетные данные для подключения к вашей базе данных.
+
+Не забудьте также добавить const express = require('express'); в начало вашего файла, чтобы использовать app.
+
+
+
+
+Теперь напиши скрипт, который делает фетч запрос по этому пути и поулчаетс яинфомрацию.
+используя эту инофрмацию он заполняет все блоки с ul элементами li
+
+3 мая в 15:58
+Для выполнения этой задачи, вам нужно будет написать JavaScript код, который будет выполнять AJAX запрос к серверу и затем обновлять DOM с полученными данными. Ниже приведен пример такого кода:
+
+
+// Функция для отправки AJAX-запроса и обновления списка друзей
+function updateFriendList(listId, url) {
+    fetch(url) // Отправляем запрос к серверу
+        .then(response => response.json()) // Преобразуем ответ в JSON
+        .then(data => {
+            // Очищаем текущий список
+            var list = document.getElementById(listId);
+            while (list.firstChild) {
+                list.removeChild(list.firstChild);
+            }
+            
+            // Добавляем друзей в список
+            data.forEach(friend => {
+                var li = document.createElement('li');
+                li.textContent = friend;
+                list.appendChild(li);
+            });
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Добавляем обработчик события 'change' для select элемента
+document.getElementById('friend-select').addEventListener('change', function() {
+    var selectedOption = this.options[this.selectedIndex];
+    
+    switch (selectedOption.value) {
+        case 'friend-block':
+            updateFriendList('friend-list', '/friends_info?type=friend-block');
+            break;
+        case 'you-follow':
+            updateFriendList('follow-list', '/friends_info?type=you-follow');
+            break;
+        case 'follow-to-you':
+            updateFriendList('follower-list', '/friends_info?type=follow-to-you');
+            break;
+    }
+});
+В этом коде мы используем fetch() для отправки HTTP-запроса к серверу. После получения ответа, мы преобразуем его в JSON и добавляем полученные данные в соответствующий список <ul> с помощью функции updateFriendList. Обратите внимание, что вам нужно будет заменить '/friends_info?type=friend-block' на реальный URL вашего API-сервиса, который возвращает данные о друзьях в нужном формате (например, JSON).
+
+
+
+
+Мне нужно исправить мой код и сделать его декомпозированным, как утебя.
+Исправь мой код:
+// Получаем ссылку на выпадающий список и все блоки
+const friendSelect = document.getElementById("friend-select");
+const youFollowBlock = document.getElementById('follow');
+const friendBlock = document.getElementById('friends');
+const followToYouBlock = document.getElementById('followers');
+
+// Назначаем обработчик события при изменении выбранной опции в списке
+friendSelect.addEventListener("change", function() {
+    // Скрываем все блоки
+    friendBlock.style.display = "none";
+    youFollowBlock.style.display = "none";
+    followToYouBlock.style.display = "none";
+
+
+// Определяем, какой блок нужно показать в зависимости от выбранной опции
+const selectedOption = friendSelect.value;
+switch (selectedOption) {
+    case "you-follow":
+        youFollowBlock.style.display = "block";
+        break;
+    case "friend-block":
+        friendBlock.style.display = "block";
+        break;
+    case "follow-to-you":
+        followToYouBlock.style.display = "block";
+        break;
+    default:
+        console.error("Неизвестная опция выбрана в выпадающем списке");
+}
+});
+
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const response = await fetch('/friends_info');
+        const data = await response.json();
+
+
+    // Проверяем, содержит ли ответ ошибку
+    if (data.error) {
+        console.error('Ошибка:', data.error);
+        return;
+    }
+
+    // Получаем информацию о подписках, подписчиках и друзьях
+    const follows = data.follows;
+    const followers = data.followers;
+    const friends = data.friends;
+
+    if (follows && follows.length > 0) {
+        const followList = document.getElementById("follow-list");
+        followList.innerHTML = "";
+
+        follows.forEach(follow => {
+            var listItem = document.createElement("li");
+
+            // Создаем ссылку для пользователя
+            var followLink = document.createElement("a");
+            followLink.classList.add('a-list');
+            followLink.href = `/profile?user_id=${follow.following_id}`; // Здесь укажите ссылку на профиль пользователя или другую страницу
+            followLink.textContent = follow.username;
+
+            // Добавляем ссылку в элемент списка
+            listItem.appendChild(followLink);
+
+            // Добавляем элемент списка в список пользователей
+            followList.appendChild(listItem);
+        });
+    } else {
+        console.log('Нет сообщений для отображения');
+    }
+
+    if (followers && followers.length > 0) {
+        const followerList = document.getElementById("follower-list");
+        followerList.innerHTML = "";
+
+        followers.forEach(follower => {
+            var listItem = document.createElement("li");
+
+            // Создаем ссылку для пользователя
+            var followerLink = document.createElement("a");
+            followerLink.classList.add('a-list');
+            followerLink.href = `/profile?user_id=${follower.follower_id}`; // Здесь укажите ссылку на профиль пользователя или другую страницу
+            followerLink.textContent = follower.username;
+
+            // Добавляем ссылку в элемент списка
+            listItem.appendChild(followerLink);
+
+            // Добавляем элемент списка в список пользователей
+            followerList.appendChild(listItem);
+        });
+    } else {
+        console.log('Нет сообщений для отображения');
+    }
+
+    if (friends && friends.length > 0) {
+        const friendList = document.getElementById("friend-list");
+        friendList.innerHTML = "";
+
+        friends.forEach(friend => {
+            var listItem = document.createElement("li");
+
+            // Создаем ссылку для пользователя
+            var friendLink = document.createElement("a");
+            friendLink.classList.add('a-list');
+            friendLink.href = `/profile?user_id=${friend.user_id_2}`; // Здесь укажите ссылку на профиль пользователя или другую страницу
+            friendLink.textContent = friend.username;
+
+            // Добавляем ссылку в элемент списка
+            listItem.appendChild(friendLink);
+
+            // Добавляем элемент списка в список пользователей
+            friendList.appendChild(listItem);
+        });
+    } else {
+        console.log('Нет сообщений для отображения');
+    }
+
+} catch (error) {
+    console.error('Ошибка при получении информации о друзьях:', error);
+}
+});
+
+3 мая в 16:02
+Ваш код уже достаточно хорошо декомпозирован, но я могу предложить несколько улучшений:
+
+Используйте let вместо const для переменных, которые вы изменяете внутри функции.
+Используйте switch вместо if/else для лучшей читаемости.
+Используйте Array.prototype.map для создания элементов списка из массива данных.
+Используйте Array.prototype.forEach для обработки массивов данных.
+Используйте Array.prototype.filter для фильтрации массивов данных.
+Используйте Array.prototype.reduce для объединения массивов данных.
+Вот пример улучшенного кода:
+
+
+// Получаем ссылку на выпадающий список и все блоки
+let friendSelect = document.getElementById("friend-select");
+let youFollowBlock = document.getElementById('follow');
+let friendBlock = document.getElementById('friends');
+let followToYouBlock = document.getElementById('followers');
+
+// Назначаем обработчик события при изменении выбранной опции в списке
+friendSelect.addEventListener("change", function() {
+    // Скрываем все блоки
+    friendBlock.style.display = "none";
+    youFollowBlock.style.display = "none";
+    followToYouBlock.style.display = "none";
+
+    // Определяем, какой блок нужно показать в зависимости от выбранной опции
+    let selectedOption = friendSelect.value;
+    switch (selectedOption) {
+        case "you-follow":
+            youFollowBlock.style.display = "block";
+            break;
+        case "friend-block":
+            friendBlock.style.display = "block";
+            break;
+        case "follow-to-you":
+            followToYouBlock.style.display = "block";
+            break;
+        default:
+            console.error("Неизвестная опция выбрана в выпадающем списке");
+    }
+});
+
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        let response = await fetch('/friends_info');
+        let data = await response.json();
+
+        // Проверяем, содержит ли ответ ошибку
+        if (data.error) {
+            console.error('Ошибка:', data.error);
+            return;
+        }
+
+        // Получаем информацию о подписках, подписчиках и друзьях
+        let follows = data.follows;
+        let followers = data.followers;
+        let friends = data.friends;
+
+        // Фильтруем и объединяем массивы для отображения в списках
+        let allFriends = [...follows, ...friends];
+        let allFollowers = [...followers];
+
+        // Отображаем данные в списках
+        displayFriends(allFriends, document.getElementById("follow-list"));
+        displayFriends(allFollowers, document.getElementById("follower-list"));
+        displayFriends(friends, document.getElementById("friend-list"));
+
+    } catch (error) {
+        console.error('Ошибка при получении информации о друзьях:', error);
+    }
+});
+
+function displayFriends(friends, listId) {
+    if (friends && friends.length > 0) {
+        let list = document.getElementById(listId);
+        list.innerHTML = "";
+        friends.forEach(friend => {
+            let listItem = document.createElement("li");
+            let link = document.createElement("a");
+            link.classList.add('a-list');
+            link.href = `/profile?user_id=${friend.user_id}`; // Здесь укажите ссылку на профиль пользователя или другую страницу
+            link.textContent = friend.username;
+            listItem.appendChild(link);
+            list.appendChild(listItem);
+        });
+    } else {
+        console.log('Нет сообщений для отображения');
+    }
+}
+Этот код делает то же самое, что и ваш оригинальный код, но он более модульный и легче читается благодаря использованию методов массивов и функций высшего порядка.
+
+
+
+
+Такая ошибка получается:
+friends.js:57 Ошибка при получении информации о друзьях: TypeError: Cannot set properties of null (setting 'innerHTML')
+    at displayFriends (friends.js:64:24)
+    at HTMLDocument.<anonymous> (friends.js:52:9)
+
+Вот в этой строке:console.error('Ошибка при получении информации о друзьях:', error);
+    }
+
+3 мая в 16:05
+Ошибка TypeError: Cannot set properties of null (setting 'innerHTML') указывает на то, что вы пытаетесь установить свойство innerHTML объекта, который равен null. Это обычно происходит, когда вы пытаетесь установить содержимое элемента, который еще не был найден в DOM.
+
+В вашем случае, ошибка возникает в функции displayFriends на строке list.innerHTML = "". Переменной list должно быть присвоено значение элемента списка, но похоже, что она равна null. Это может произойти, если вы пытаетесь найти элемент списка по его ID, но такой элемент не существует в DOM.
+
+Убедитесь, что у вас есть элементы с соответствующими ID в вашем HTML-документе:
+
+
+<ul id="follow-list">
+</ul>
+<ul id="follower-list">
+</ul>
+<ul id="friend-list">
+</ul>
+И что вы правильно ищете эти элементы в вашем JavaScript-коде:
+
+
+let followList = document.getElementById("follow-list");
+let followerList = document.getElementById("follower-list");
+let friendList = document.getElementById("friend-list");
+Если эти элементы существуют в вашем HTML-документе, убедитесь, что вы правильно ищете их и что они не были удалены или переименованы во время загрузки страницы. Если элементы отсутствуют, ошибка TypeError: Cannot set properties of null (setting 'innerHTML') будет возникать при попытке установить innerHTML.
+
+
+
+
+Ошибка осталась:
+Ошибка при получении информации о друзьях: TypeError: Cannot set properties of null (setting 'innerHTML')
+    at displayFriends (friends.js:60:24)
+    at HTMLDocument.<anonymous> (friends.js:48:9)
+
+3 мая в 16:10
+Чтобы помочь вам решить проблему, мне нужно увидеть ваш HTML-код и JavaScript-код, который вы используете для взаимодействия с элементами DOM. Пожалуйста, предоставьте эти фрагменты кода, чтобы я мог проанализировать их и дать более конкретные рекомендации.
+
+Тем не менее, вот несколько общих советов, которые могут помочь:
+
+Убедитесь, что у вас есть элементы с соответствующими ID в вашем HTML-документе.
+Проверьте, что вы правильно ищете эти элементы в вашем JavaScript-коде.
+Убедитесь, что ваш JavaScript-код выполняется после того, как DOM полностью загружен. Это можно сделать, поместив ваш JavaScript-код внутри обработчика события DOMContentLoaded.
+Пример HTML-кода:
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Friends List</title>
+</head>
+<body>
+    <div class="friend-list">
+        <select id="friend-select">
+            <option value="friend-block" selected>Друзья</option>
+            <option value="you-follow">Ваши подписки</option>
+            <option value="follow-to-you">Подписчики</option>
+        </select>
+        <div class="you-follow" id="follow">
+            <ul id="follow-list">
+            </ul>
+        </div>
+        <div class="friend-block" id="friends">
+            <ul id="friend-list">
+            </ul>
+        </div>
+        <div class="follow-to-you" id="followers">
+            <ul id="follower-list">
+            </ul>
+        </div>
+    </div>
+    <script src="friends.js"></script>
+</body>
+</html>
+Пример JavaScript-кода:
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Ваш JavaScript-код здесь
+});
+Если после проверки этих моментов ошибка все еще возникает, пожалуйста, предоставьте полный HTML-код и JavaScript-код, который вы используете, чтобы я мог дать более точные рекомендации.
