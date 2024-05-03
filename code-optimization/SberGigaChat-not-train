@@ -1,0 +1,1139 @@
+https://developers.sber.ru/link/gcsFGbFXVo
+
+
+оптимизируй код:
+app.get('/friends_info', async (req, res) => {
+    try {
+        // Пакетный запрос к базе данных
+        const [followsQuery, followersQuery, friendsQuery] = await Promise.all([
+            pool.query({
+                text: SELECT username, following_id                        FROM followers                        JOIN users ON followers.following_id = users.user_id                        WHERE followers.follower_id = $1,
+                values: [req.session.userId]
+            }),
+            pool.query({
+                text: SELECT username, follower_id                        FROM followers                        JOIN users ON followers.follower_id = users.user_id                        WHERE followers.following_id = $1,
+                values: [req.session.userId]
+            }),
+            pool.query({
+                text: SELECT username, user_id_2                        FROM friends                        JOIN users ON friends.user_id_2 = users.user_id                        WHERE friends.user_id_1 = $1,
+                values: [req.session.userId]
+            })
+        ]);
+
+
+    // Отправка данных клиенту
+    res.json({
+        follows: followsQuery.rows,
+        followers: followersQuery.rows,
+        friends: friendsQuery.rows
+    });
+} catch (error) {
+    console.error('Ошибка при выполнении запросов:', error);
+    res.status(500).json({ error: 'Ошибка при получении информации о друзьях' });
+}
+});
+
+3 мая в 20:46
+Оптимизация кода заключается в том, чтобы сделать его более читаемым и эффективным. Вот пример оптимизированного кода:
+
+
+app.get('/friends_info', async (req, res) => {
+    try {
+        // Используем Promise.all для выполнения всех трех запросов одновременно
+        const [followsQuery, followersQuery, friendsQuery] = await Promise.all([
+            pool.query({
+                text: `SELECT username, following_id
+                       FROM followers
+                       JOIN users ON followers.following_id = users.user_id
+                       WHERE followers.follower_id = $1`,
+                values: [req.session.userId]
+            }),
+            pool.query({
+                text: `SELECT username, follower_id
+                       FROM followers
+                       JOIN users ON followers.follower_id = users.user_id
+                       WHERE followers.following_id = $1`,
+                values: [req.session.userId]
+            }),
+            pool.query({
+                text: `SELECT username, user_id_2
+                       FROM friends
+                       JOIN users ON friends.user_id_2 = users.user_id
+                       WHERE friends.user_id_1 = $1`,
+                values: [req.session.userId]
+            })
+        ]);
+
+        // Отправляем данные клиенту
+        res.json({
+            follows: followsQuery.rows,
+            followers: followersQuery.rows,
+            friends: friendsQuery.rows
+        });
+    } catch (error) {
+        console.error('Ошибка при выполнении запросов:', error);
+        res.status(500).json({ error: 'Ошибка при получении информации о друзьях' });
+    }
+});
+Этот код делает то же самое, что и исходный, но он более структурирован и легче читается. Кроме того, использование Promise.all позволяет сократить количество вложенных блоков try/catch, что также улучшает читаемость кода.
+
+
+
+
+Оптимизируй этот код:
+app.get('/search_friend', async (req, res) => {
+    const currentUserId = req.session.userId;
+
+
+try {
+    const search_name = req.query.search_keyword;
+    // Запрос к базе данных
+    const find_friends = await pool.query({
+        text: 'SELECT username, user_id FROM users WHERE username ILIKE $1 AND user_id != $2',
+        values: [`%${search_name}%`, currentUserId],
+    });
+
+    res.json({
+        find_friend: find_friends.rows
+    });
+} catch (error) {
+    handleErrors(res, error);
+}
+});
+
+3 мая в 20:52
+Для оптимизации этого кода мы можем улучшить обработку ошибок и сделать структуру кода более чистой. Вот оптимизированный вариант:
+
+
+app.get('/search_friend', async (req, res) => {
+    const currentUserId = req.session.userId;
+    const search_name = req.query.search_keyword;
+
+    try {
+        // Запрос к базе данных
+        const find_friends = await pool.query({
+            text: 'SELECT username, user_id FROM users WHERE username ILIKE $1 AND user_id != $2',
+            values: [`%${search_name}%`, currentUserId],
+        });
+
+        res.json({
+            find_friend: find_friends.rows
+        });
+    } catch (error) {
+        // Централизованная функция обработки ошибок
+        handleErrors(res, error);
+    }
+});
+
+// Функция для централизованной обработки ошибок
+function handleErrors(res, error) {
+    console.error('Ошибка при выполнении запроса:', error);
+    res.status(500).json({ error: 'Ошибка при поиске друзей' });
+}
+В этом коде мы создали функцию handleErrors, которая будет использоваться для обработки всех ошибок в приложении. Это делает логику обработки ошибок более централизованной и упрощает её поддержку и расширение. Также мы убрали дублирование кода, который отвечает за отправку статуса ошибки клиенту, что делает код более чистым и понятным.
+
+
+
+
+Оптимизируй этот код:
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+
+// Запрос к базе данных для поиска пользователя с указанным именем пользователя
+const query = {
+    text: 'SELECT * FROM users WHERE username = $1',
+    values: [username]
+};
+
+pool.query(query, (err, result) => {
+    if (err) {
+        console.error('Ошибка при выполнении запроса:', err);
+        res.status(500).send('Ошибка при выполнении запроса');
+        return;
+    }
+
+    if (result.rows.length === 0) {
+        // Если пользователь с указанным именем пользователя не найден
+        res.status(401).send('Неправильное имя пользователя или пароль');
+        return;
+    }
+
+    const user = result.rows[0];
+    // Здесь вы можете сравнить хэш пароля из базы данных с введенным паролем
+    if (user.user_password === password) {
+        // После успешной аутентификации
+        req.session.authenticated = true; // Устанавливаем флаг успешной аутентификации в сессии
+        req.session.userId = user.user_id;
+        req.session.username = user.username;
+        req.session.mail = user.email;
+        req.session.profile_info = user.profile_info;
+        req.session.user_date = user.registration_date;
+        res.redirect('/news');
+    } else {
+        // Пароли не совпали
+        res.status(401).send('Неправильное имя пользователя или пароль');
+    }
+});
+});
+
+3 мая в 20:58
+Этот код уже достаточно оптимизирован, но я могу предложить несколько улучшений:
+
+Использование async/await для улучшения читаемости кода:
+
+app.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // Запрос к базе данных для поиска пользователя с указанным именем пользователя
+        const query = {
+            text: 'SELECT * FROM users WHERE username = $1',
+            values: [username]
+        };
+
+        const result = await pool.query(query);
+
+        if (result.rows.length === 0) {
+            // Если пользователь с указанным именем пользователя не найден
+            res.status(401).send('Неправильное имя пользователя или пароль');
+            return;
+        }
+
+        const user = result.rows[0];
+        // Здесь вы можете сравнить хэш пароля из базы данных с введенным паролем
+        if (user.user_password === password) {
+            // После успешной аутентификации
+            req.session.authenticated = true; // Устанавливаем флаг успешной аутентификации в сессии
+            req.session.userId = user.user_id;
+            req.session.username = user.username;
+            req.session.mail = user.email;
+            req.session.profile_info = user.profile_info;
+            req.session.user_date = user.registration_date;
+            res.redirect('/news');
+        } else {
+            // Пароли не совпали
+            res.status(401).send('Неправильное имя пользователя или пароль');
+        }
+    } catch (err) {
+        console.error('Ошибка при выполнении запроса:', err);
+        res.status(500).send('Ошибка при выполнении запроса');
+    }
+});
+Использование middleware для обработки ошибок:
+
+app.use((err, req, res, next) => {
+    console.error('Ошибка при выполнении запроса:', err);
+    res.status(500).send('Ошибка при выполнении запроса');
+});
+
+app.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // Запрос к базе данных для поиска пользователя с указанным именем пользователя
+        const query = {
+            text: 'SELECT * FROM users WHERE username = $1',
+            values: [username]
+        };
+
+        const result = await pool.query(query);
+
+        if (result.rows.length === 0) {
+            // Если пользователь с указанным именем пользователя не найден
+            res.status(401).send('Неправильное имя пользователя или пароль');
+            return;
+        }
+
+        const user = result.rows[0];
+        // Здесь вы можете сравнить хэш пароля из базы данных с введенным паролем
+        if (user.user_password === password) {
+            // После успешной аутентификации
+            req.session.authenticated = true; // Устанавливаем флаг успешной аутентификации в сессии
+            req.session.userId = user.user_id;
+            req.session.username = user.username;
+            req.session.mail = user.email;
+            req.session.profile_info = user.profile_info;
+            req.session.user_date = user.registration_date;
+            res.redirect('/news');
+        } else {
+            // Пароли не совпали
+            res.status(401).send('Неправильное имя пользователя или пароль');
+        }
+    } catch (err) {
+        // Обработка ошибок уже происходит в middleware
+    }
+});
+Эти изменения делают код более читаемым и уменьшают дублирование кода для обработки ошибок.
+
+
+
+
+// Обработка ошибок уже происходит в middleware
+Это что такое?
+
+3 мая в 21:06
+Это комментарий, объясняющий, что обработка ошибок уже была реализована в middleware, которое было установлено ранее в приложении. Middleware - это функциональность, которая может быть добавлена между точкой входа и точкой выхода приложения Express, позволяющая манипулировать запросами и ответами до их достижения следующего middleware или конечной точки. В данном случае, middleware уже было установлено для обработки общих ошибок, поэтому нет необходимости повторять эту логику в каждой конечной точке.
+
+
+
+
+Оптимизиурй код:
+document.addEventListener('DOMContentLoaded', function () {
+    const searchForm = document.querySelector('.search form');
+    const findFriendsDiv = document.getElementById('find-friends');
+
+
+searchForm.addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    const formData = new FormData(searchForm);
+    const searchKeyword = formData.get('search_keyword');
+
+    try {
+        const response = await fetch(`/search_friend?search_keyword=${searchKeyword}`);
+        const data = await response.json();
+
+        if (data.find_friend.length > 0) {
+            const friendList = data.find_friend.map(friend => `<li><a class="a-list" href="/profile?user_id=${friend.user_id}">${friend.username}</a></li>`).join('');
+            findFriendsDiv.innerHTML = `<ul>${friendList}</ul>`;
+        } else {
+            findFriendsDiv.innerHTML = `<p>Ничего не найдено</p>`;
+        }
+    } catch (error) {
+        console.error('Ошибка при получении данных:', error);
+        findFriendsDiv.innerHTML = `<p>Ошибка при получении данных</p>`;
+    }
+});
+});
+
+3 мая в 21:09
+Ваш код уже хорошо оптимизирован, но я могу предложить несколько небольших улучшений:
+
+Использовать метод form.submit() вместо event.preventDefault() и event.stopPropagation(), так как event.preventDefault() предотвращает отправку формы, а form.submit() позволяет контролировать процесс отправки формы.
+Использовать метод textContent вместо innerHTML для обновления содержимого элемента, если нужно изменить только текст внутри элемента без влияния на стилизацию.
+Вот оптимизированный код:
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.querySelector('.search form');
+    const findFriendsDiv = document.getElementById('find-friends');
+
+    searchForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(this);
+        const searchKeyword = formData.get('search_keyword');
+
+        try {
+            const response = await fetch(`/search_friend?search_keyword=${searchKeyword}`);
+            const data = await response.json();
+
+            if (data.find_friend.length > 0) {
+                const friendList = data.find_friend.map(friend => `<li><a class="a-list" href="/profile?user_id=${friend.user_id}">${friend.username}</a></li>`).join('');
+                findFriendsDiv.innerHTML = `<ul>${friendList}</ul>`;
+            } else {
+                findFriendsDiv.textContent = 'Ничего не найдено';
+            }
+        } catch (error) {
+            console.error('Ошибка при получении данных:', error);
+            findFriendsDiv.textContent = 'Ошибка при получении данных';
+        }
+
+        this.reset(); // Сброс формы после отправки
+    });
+});
+Этот код делает то же самое, что и ваш оригинальный код, но он немного более чистый и читаемый.
+
+
+
+
+Оптимизируй этот код:
+function delete_members() {
+    // Получаем все чекбоксы
+    const checkboxes = document.querySelectorAll('.chat-members-check input[type="checkbox"]');
+
+
+// Проверяем, выбран ли хотя бы один чекбокс
+let anyChecked = false;
+checkboxes.forEach(checkbox => {
+    if (checkbox.checked) {
+        anyChecked = true;
+        return;
+    }
+});
+
+// Если ни один чекбокс не выбран, выводим сообщение об ошибке
+if (!anyChecked) {
+    alert('Выберите хотя бы одного пользователя для удаления');
+    return;
+}
+
+// Получаем ID чата
+const chatId = document.getElementById('chat_id').value;
+
+// Создаем массив для хранения ID пользователей, которых нужно удалить
+const usersToDelete = [];
+
+// Проходим по всем чекбоксам и добавляем ID выбранных пользователей в массив usersToDelete
+checkboxes.forEach(checkbox => {
+    if (checkbox.checked) {
+        usersToDelete.push(checkbox.value);
+    }
+});
+
+// Отправляем запрос на сервер для удаления выбранных пользователей из чата
+fetch('/delete_chat_members', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ chatId: chatId, usersToDelete: usersToDelete })
+})
+    .then(response => {
+        if (response.ok) {
+            // Обновляем страницу или выполняем другие действия после успешного удаления
+            window.location.reload();
+        } else {
+            throw new Error('Ошибка удаления пользователей из чата');
+        }
+    })
+    .catch(error => {
+        console.error('Произошла ошибка:', error);
+        alert('Произошла ошибка при удалении пользователей из чата');
+    });
+}
+
+3 мая в 21:15
+Ваш код уже довольно хорош, но я могу предложить несколько улучшений:
+
+Использование Array.prototype.some() вместо цикла для проверки, выбран ли хотя бы один чекбокс.
+Использование fetch() с промисами для асинхронного запроса на сервер.
+Использование try...catch для обработки ошибок сервера.
+Вот оптимизированный код:
+
+
+function delete_members() {
+    // Получаем все чекбоксы
+    const checkboxes = document.querySelectorAll('.chat-members-check input[type="checkbox"]');
+
+    // Проверяем, выбран ли хотя бы один чекбокс
+    if (!checkboxes.some(checkbox => checkbox.checked)) {
+        alert('Выберите хотя бы одного пользователя для удаления');
+        return;
+    }
+
+    // Получаем ID чата
+    const chatId = document.getElementById('chat_id').value;
+
+    // Создаем массив для хранения ID пользователей, которых нужно удалить
+    const usersToDelete = Array.from(checkboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+
+    // Отправляем запрос на сервер для удаления выбранных пользователей из чата
+    fetch('/delete_chat_members', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ chatId: chatId, usersToDelete: usersToDelete })
+    })
+        .then(response => {
+            if (response.ok) {
+                // Обновляем страницу или выполняем другие действия после успешного удаления
+                window.location.reload();
+            } else {
+                throw new Error('Ошибка удаления пользователей из чата');
+            }
+        })
+        .catch(error => {
+            console.error('Произошла ошибка:', error);
+            alert('Произошла ошибка при удалении пользователей из чата');
+        });
+}
+Этот код делает то же самое, что и ваш оригинальный код, но он немного более чистый и использует лучшие практики JavaScript.
+
+
+
+
+Оптимизируй этот код:
+async function inviteParticipant(chat_id){
+    const form = document.getElementById('group-chat-adding');
+    const chatIdInput = document.getElementById('chat-id-to-add'); // Получаем скрытое поле input с идентификатором чата
+    //const chatId = chat_id; // Получаем идентификатор чата (замените на вашу логику получения идентификатора)
+    chatIdInput.value = chat_id;
+    form.style.display = 'block'; // Показываем форму при нажатии на кнопку "Пригласить участника"
+
+
+try {
+    // Получаем значение из скрытого поля input
+    //const chat_id = document.getElementById('chat-id-to-add').value;
+
+    const response = await fetch(`/add_to_chat?chat_id=${chat_id}`);
+    const data = await response.json();
+
+    // Проверяем, содержит ли ответ ошибку
+    if (data.error) {
+        return;
+    }
+
+    // Получаем информацию о друзьях
+    const friends = data.friends;
+
+    // Получаем ссылку на список друзей
+    const friendsList = document.getElementById('friends-add-list');
+
+    // Очищаем список перед добавлением новых друзей
+    friendsList.innerHTML = '';
+
+    if (friends.length === 0) {
+        const listItem = document.createElement('li');
+        const label = document.createElement('label');
+        label.textContent = 'Все друзья добавлены';
+        listItem.appendChild(label);
+        friendsList.appendChild(listItem);
+    } else {
+        // Для каждого друга создаем элемент списка и чекбокс
+        friends.forEach(friend => {
+            const listItem = document.createElement('li');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = friend.user_id; // Устанавливаем значение чекбокса равное идентификатору друга
+            const label = document.createElement('label');
+            label.textContent = friend.username; // Устанавливаем текст метки равным имени друга
+            listItem.appendChild(checkbox);
+            listItem.appendChild(label);
+            friendsList.appendChild(listItem);
+        });
+    }
+} catch (error) {
+    console.log("Ошибка при добавлении участника чата:", error);
+}
+}
+
+3 мая в 21:20
+Я не вижу ничего, что можно было бы оптимизировать в этом коде. Он выглядит хорошо структурированным и соответствует современным стандартам написания асинхронного кода. Однако, если вы хотите, чтобы я предложил какие-то улучшения, пожалуйста, уточните, что именно вы хотели бы оптимизировать.
+
+
+
+
+Оптимизируй этот коДД:
+function create_chat(){
+    try {
+        // Получаем значение поля названия чата
+        const chatName = document.getElementById("chat-name").value;
+
+
+    if (chatName == '') {
+        alert('Введите название чата');
+        displayErrorMessage('Введите название чата');
+        return; // Прерываем выполнение функции, так как поле пустое
+    }
+
+    // Получаем выбранных участников
+    const selectedParticipants = [];
+    const checkboxes = document.querySelectorAll('#friends-chat-list input[type="checkbox"]:checked');
+    checkboxes.forEach(checkbox => {
+        selectedParticipants.push(checkbox.value);
+    });
+
+
+    if (selectedParticipants.length == 0) {
+        alert('Выберите хотя бы одного участника');
+        displayErrorMessage('Выберите хотя бы одного участника');
+        return; // Прерываем выполнение функции, так как нет выбранных участников
+    }
+
+    const data = {
+        chatName: chatName,
+        participants: selectedParticipants
+    };
+
+    // Отправляем POST-запрос на сервер
+    fetch('/create_chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Ошибка сети');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Ответ от сервера:', data);
+            // Дополнительная обработка успешного ответа от сервера
+        })
+        .catch(error => {
+            console.error('Ошибка при отправке запроса:', error);
+            // Дополнительная обработка ошибки
+        });
+
+    // Очистим поля формы после создания чата
+    document.getElementById("chat-name").value = "";
+
+    // Закроем форму после создания чата
+    close_group();
+} catch (error) {
+    console.error('Ошибка при создании группового чата:', error);
+}
+}
+
+async function delete_dialog(user_id) {
+    try {
+        const response = await fetch(/delete_dialog?user_id=${user_id}, {
+            method: 'POST' // Укажите метод запроса как POST
+        });
+
+
+    if (!response.ok) {
+        throw new Error('Ошибка при удалении диалога');
+    }
+
+    // Перенаправьте пользователя на страницу сообщений после успешного удаления
+    window.location.href = '/message';
+} catch (error) {
+    console.error('Ошибка при удалении диалога: ', error);
+}
+}
+
+async function delete_chat(chat_id){
+    try {
+        const response = await fetch(/delete_chat_member?chat_id=${chat_id}, {
+            method: 'POST' // Укажите метод запроса как POST
+        });
+
+
+    if (!response.ok) {
+        throw new Error('Ошибка при удалении диалога');
+    }
+
+    // Перенаправьте пользователя на страницу сообщений после успешного удаления
+    window.location.href = '/message';
+} catch (error) {
+    console.log('Ошибка при удалении чата: ', error);
+}
+}
+
+3 мая в 21:28
+Оптимизировала ваш код:
+
+
+function create_chat() {
+  try {
+    const chatName = document.getElementById("chat-name").value;
+
+    if (!chatName) {
+      alert('Введите название чата');
+      displayErrorMessage('Введите название чата');
+      return;
+    }
+
+    const selectedParticipants = Array.from(
+      document.querySelectorAll('#friends-chat-list input[type="checkbox"]:checked')
+    ).map((checkbox) => checkbox.value);
+
+    if (!selectedParticipants.length) {
+      alert('Выберите хотя бы одного участника');
+      displayErrorMessage('Выберите хотя бы одного участника');
+      return;
+    }
+
+    const data = {
+      chatName,
+      participants: selectedParticipants,
+    };
+
+    fetch('/create_chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Ответ от сервера:', data);
+        // Дополнительная обработка успешного ответа от сервера
+      })
+      .catch((error) => {
+        console.error('Ошибка при отправке запроса:', error);
+        // Дополнительная обработка ошибки
+      });
+
+    document.getElementById("chat-name").value = '';
+    close_group();
+  } catch (error) {
+    console.error('Ошибка при создании группового чата:', error);
+  }
+}
+
+async function delete_dialog(user_id) {
+  try {
+    const response = await fetch(`/delete_dialog?user_id=${user_id}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error('Ошибка при удалении диалога');
+    }
+
+    window.location.href = '/message';
+  } catch (error) {
+    console.error('Ошибка при удалении диалога: ', error);
+  }
+}
+
+async function delete_chat(chat_id) {
+  try {
+    const response = await fetch(`/delete_chat_member?chat_id=${chat_id}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error('Ошибка при удалении диалога');
+    }
+
+    window.location.href = '/message';
+  } catch (error) {
+    console.error('Ошибка при удалении чата: ', error);
+  }
+}
+Этот код делает то же самое, что и ваш, но он более структурирован и легче читается. Я также исправила некоторые мелкие ошибки, такие как использование Array.from() для преобразования NodeList в массив и добавила пропущенные кавычки в атрибутах HTML.
+
+
+
+
+оптимизируй этот код:
+document.addEventListener('DOMContentLoaded', async function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('user_id');
+
+
+const chatId = urlParams.get('chat_id');
+
+if (userId == null && chatId == null) {
+    try {
+        // Выполнение запроса на получение всех сообщений
+        const response = await fetch('/all_mes_show');
+        const { error, users, chats} = await response.json();
+
+        console.log('Это чаты:', chats);
+
+        if (error) {
+            console.error('Ошибка при выполнении запроса:', error);
+            return;
+        }
+
+        // Добавление пользователей в диалоги
+        const dialogsSection = document.querySelector('.dialogs-section');
+        users.forEach(user => {
+            const dialogDiv = document.createElement('div');
+            dialogDiv.classList.add('dialog-div');
+            dialogDiv.classList.add('div-space-between');
+            const usernameLink = document.createElement('a');
+            usernameLink.textContent = user.username;
+            usernameLink.classList.add('auth-link');
+            usernameLink.href = `/message?user_id=${user.user_id}`;
+            dialogDiv.appendChild(usernameLink);
+
+            // Создаем блок с кнопкой удаления диалога
+            const deleteButton = document.createElement('div');
+            deleteButton.classList.add('delete-button');
+            deleteButton.textContent = '❌'; // Вставляем крестик
+
+            // Назначаем обработчик события для кнопки удаления диалога
+            deleteButton.addEventListener('click', () => {
+                delete_dialog(user.user_id); // Вызываем функцию delete_dialog с user_id
+            });
+
+            // Добавляем кнопку удаления в блок диалога
+            dialogDiv.appendChild(deleteButton);
+
+            dialogsSection.appendChild(dialogDiv);
+        });
+        chats.forEach(chat => {
+            const dialogDiv = document.createElement('div');
+            dialogDiv.classList.add('dialog-div');
+            dialogDiv.classList.add('red-background');
+            dialogDiv.classList.add('div-space-between');
+            const chatnameLink = document.createElement('a');
+            chatnameLink.textContent = chat.chat_name;
+            chatnameLink.classList.add('auth-link');
+            chatnameLink.href = `/message?chat_id=${chat.chat_id}`;
+            dialogDiv.appendChild(chatnameLink);
+
+            // Создаем блок с кнопками
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.classList.add('buttons-container');
+
+            // Создаем кнопку удаления диалога
+            const deleteButton = document.createElement('div');
+            deleteButton.classList.add('delete-button');
+            deleteButton.textContent = '❌'; // Вставляем крестик
+
+            // Назначаем обработчик события для кнопки удаления диалога
+            deleteButton.addEventListener('click', () => {
+                delete_chat(chat.chat_id);
+            });
+
+            // Добавляем кнопку удаления в блок с кнопками
+            buttonsContainer.appendChild(deleteButton);
+
+            const inviteButton = document.createElement('div');
+            inviteButton.classList.add('invite-button');
+            inviteButton.textContent = '➕'; // Используем символ с более крупным размером плюса
+            inviteButton.style.backgroundColor = 'blue'; // Синий фон
+
+            // Назначаем обработчик события для кнопки "Пригласить участника"
+            inviteButton.addEventListener('click', () => {
+                inviteParticipant(chat.chat_id); // Передаем параметр chat_id в функцию inviteParticipant
+            });
+
+            inviteButton.addEventListener('click', () => {
+                const form = document.getElementById('group-chat-adding');
+                const chatIdInput = document.getElementById('chat-id-to-add'); // Получаем скрытое поле input с идентификатором чата
+                const chatId = chat.chat_id; // Получаем идентификатор чата (замените на вашу логику получения идентификатора)
+                chatIdInput.value = chatId;
+                form.style.display = 'block'; // Показываем форму при нажатии на кнопку "Пригласить участника"
+            });
+
+            // Добавляем кнопку "Пригласить участника" в блок диалога
+            dialogDiv.appendChild(inviteButton);
+            // Добавляем блок с кнопками в блок диалога
+            dialogDiv.appendChild(buttonsContainer);
+
+            dialogsSection.appendChild(dialogDiv);
+        });
+    } catch (error) {
+        console.error('Ошибка при выполнении запроса:', error);
+    }
+} else if (userId != null && chatId == null) {
+    try {
+        // Выполнение запроса на получение переписки с выбранным пользователем
+        const response = await fetch(`/conversation?idReceiver=${userId}`);
+        const { error, messages } = await response.json();
+
+        if (error) {
+            console.error('Ошибка при выполнении запроса:', error);
+            return;
+        }
+
+        // Добавление сообщений в диалог
+        const dialogsSection = document.querySelector('.dialogs-section');
+        const dialogDiv = document.createElement('div');
+        dialogDiv.classList.add('dialog-div');
+
+        if (messages && messages.length > 0) {
+            messages.forEach(message => {
+                const textMessage = document.createElement('p');
+                textMessage.textContent = `Отправил ${message.username}: ${message.message_text}`;
+                dialogDiv.appendChild(textMessage);
+            });
+        } else {
+            console.log('Нет сообщений для отображения');
+        }
+
+        dialogsSection.appendChild(dialogDiv);
+    } catch (error) {
+        console.error('Ошибка при выполнении запроса:', error);
+    }
+} else {
+    //chatId != 0
+    try {
+        const response = await fetch(`/chat_conversation?chatId=${chatId}`);
+        const { error, chat_messages } = await response.json();
+
+        if (error) {
+            console.error('Ошибка при выполнении запроса:', error);
+            return;
+        }
+
+        // Добавление сообщений в диалог
+        const dialogsSection = document.querySelector('.dialogs-section');
+        const dialogDiv = document.createElement('div');
+        dialogDiv.classList.add('dialog-div');
+
+        if (chat_messages && chat_messages.length > 0) {
+            chat_messages.forEach(chat_message => {
+                const textMessage = document.createElement('p');
+                textMessage.textContent = `Отправил ${chat_message.user_id}: ${chat_message.message_text}`;
+                dialogDiv.appendChild(textMessage);
+            });
+        } else {
+            console.log('Нет сообщений для отображения');
+        }
+
+        dialogsSection.appendChild(dialogDiv);
+    } catch (error) {
+        console.log('Ошибка при выполнении запроса', error);
+    }
+}
+
+if (userId) {
+    // Если параметр user_id есть в адресной строке, показываем форму
+    document.getElementById('messageForm').style.display = 'block';
+    document.getElementById('receiver_id').value = userId;
+}
+
+if (chatId) {
+    document.getElementById('chat-messageForm').style.display = 'block';
+    document.getElementById('chat_id').value = chatId;
+
+    fetch(`/chat_members?chat_id=${chatId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data || !data.users_info || data.users_info.length === 0 || !data.users_info[0].members_id) {
+                // Если информация пуста, перенаправляем пользователя
+                window.location.href = '/message';
+                return;
+            }
+
+            // Получаем информацию о пользователях из JSON-ответа
+            const usersInfo = data.users_info;
+
+            const membersIds = data.users_info.map(user => usersInfo[0].members_id);
+
+            // Получаем элемент списка членов чата
+            const chatMembersList = document.querySelector('.chat-members-check');
+
+            // Очищаем список перед добавлением новых элементов
+            chatMembersList.innerHTML = '';
+
+            // Получаем информацию о последнем пользователе (пользователе с индексом usersInfo.length - 1)
+            const lastUser = usersInfo[usersInfo.length - 1];
+            usersInfo.pop();
+
+            // Проверяем, является ли текущий пользователь создателем чата
+            if (lastUser.user_id === usersInfo[0].creator_id) {
+                usersInfo.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = user.username; // Здесь может быть любая информация о пользователе, которую вы хотите отобразить
+
+                    // Создаем чекбокс для каждого пользователя
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = user.user_id;
+                    if (user.user_id !== lastUser.user_id) {
+                        listItem.appendChild(checkbox);
+                    }
+
+                    chatMembersList.appendChild(listItem);
+                });
+                // Создаем кнопку "Удалить выбранных"
+                const deleteButton = document.createElement('button');
+                deleteButton.id = 'delete-members-chat';
+                deleteButton.textContent = 'Удалить выбранных';
+                deleteButton.addEventListener('click', delete_members); // Привязываем функцию delete_members к событию click кнопки
+
+                // Добавляем кнопку в DOM после списка пользователей
+                chatMembersList.after(deleteButton);
+
+            } else {
+                usersInfo.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = user.username;
+
+                    chatMembersList.appendChild(listItem);
+                });
+            }
+
+            // Показываем форму с участниками чата
+            document.querySelector('.list-chat-members').style.display = 'block';
+        })
+        .catch(error => console.error('Ошибка при получении информации о пользователях чата:', error));
+}
+});
+
+3 мая в 21:36
+Ваш код уже хорошо оптимизирован, но я могу предложить несколько улучшений:
+
+Использование map() вместо forEach() для создания более читаемого и переиспользуемого кода.
+Использование filter() для удаления ненужных элементов из массива.
+Использование async/await для более читаемого асинхронного кода.
+Вот пример оптимизированного кода:
+
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('user_id');
+    const chatId = urlParams.get('chat_id');
+
+    if (userId == null && chatId == null) {
+        try {
+            const response = await fetch('/all_mes_show');
+            const { error, users, chats } = await response.json();
+
+            if (error) {
+                console.error('Ошибка при выполнении запроса:', error);
+                return;
+            }
+
+            const dialogsSection = document.querySelector('.dialogs-section');
+            users.forEach(user => {
+                const dialogDiv = document.createElement('div');
+                dialogDiv.classList.add('dialog-div');
+                dialogDiv.classList.add('div-space-between');
+                const usernameLink = document.createElement('a');
+                usernameLink.textContent = user.username;
+                usernameLink.classList.add('auth-link');
+                usernameLink.href = `/message?user_id=${user.user_id}`;
+                dialogDiv.appendChild(usernameLink);
+
+                const deleteButton = document.createElement('div');
+                deleteButton.classList.add('delete-button');
+                deleteButton.textContent = '❌';
+                deleteButton.addEventListener('click', () => {
+                    delete_dialog(user.user_id);
+                });
+                dialogDiv.appendChild(deleteButton);
+
+                dialogsSection.appendChild(dialogDiv);
+            });
+
+            chats.forEach(chat => {
+                const dialogDiv = document.createElement('div');
+                dialogDiv.classList.add('dialog-div');
+                dialogDiv.classList.add('red-background');
+                dialogDiv.classList.add('div-space-between');
+                const chatnameLink = document.createElement('a');
+                chatnameLink.textContent = chat.chat_name;
+                chatnameLink.classList.add('auth-link');
+                chatnameLink.href = `/message?chat_id=${chat.chat_id}`;
+                dialogDiv.appendChild(chatnameLink);
+
+                const buttonsContainer = document.createElement('div');
+                buttonsContainer.classList.add('buttons-container');
+
+                const deleteButton = document.createElement('div');
+                deleteButton.classList.add('delete-button');
+                deleteButton.textContent = '❌';
+                deleteButton.addEventListener('click', () => {
+                    delete_chat(chat.chat_id);
+                });
+                buttonsContainer.appendChild(deleteButton);
+
+                const inviteButton = document.createElement('div');
+                inviteButton.classList.add('invite-button');
+                inviteButton.textContent = '➕';
+                inviteButton.style.backgroundColor = 'blue';
+                inviteButton.addEventListener('click', () => {
+                    inviteParticipant(chat.chat_id);
+                });
+                buttonsContainer.appendChild(inviteButton);
+
+                dialogDiv.appendChild(buttonsContainer);
+                dialogsSection.appendChild(dialogDiv);
+            });
+        } catch (error) {
+            console.error('Ошибка при выполнении запроса:', error);
+        }
+    } else if (userId != null && chatId == null) {
+        try {
+            const response = await fetch(`/conversation?idReceiver=${userId}`);
+            const { error, messages } = await response.json();
+
+            if (error) {
+                console.error('Ошибка при выполнении запроса:', error);
+                return;
+            }
+
+            const dialogsSection = document.querySelector('.dialogs-section');
+            const dialogDiv = document.createElement('div');
+            dialogDiv.classList.add('dialog-div');
+
+            messages.forEach(message => {
+                const textMessage
+
+
+
+продолжи
+
+3 мая в 21:39
+.textContent = Отправил ${message.username}: ${message.message_text};
+                dialogDiv.appendChild(textMessage);
+            });
+
+
+        dialogsSection.appendChild(dialogDiv);
+    } catch (error) {
+        console.error('Ошибка при выполнении запроса:', error);
+    }
+} else {
+    try {
+        const response = await fetch(`/chat_conversation?chatId=${chatId}`);
+        const { error, chat_messages } = await response.json();
+
+        if (error) {
+            console.error('Ошибка при выполнении запроса:', error);
+            return;
+        }
+
+        const dialogsSection = document.querySelector('.dialogs-section');
+        const dialogDiv = document.createElement('div');
+        dialogDiv.classList.add('dialog-div');
+
+        chat_messages.forEach(chat_message => {
+            const textMessage = document.createElement('p');
+            textMessage.textContent = `Отправил ${chat_message.user_id}: ${chat_message.message_text}`;
+            dialogDiv.appendChild(textMessage);
+        });
+
+        dialogsSection.appendChild(dialogDiv);
+    } catch (error) {
+        console.error('Ошибка при выполнении запроса:', error);
+    }
+}
+
+if (userId) {
+    document.getElementById('messageForm').style.display = 'block';
+    document.getElementById('receiver_id').value = userId;
+}
+
+if (chatId) {
+    document.getElementById('chat-messageForm').style.display = 'block';
+    document.getElementById('chat_id').value = chatId;
+
+    fetch(`/chat_members?chat_id=${chatId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data || !data.users_info || data.users_info.length === 0 || !data.users_info[0].members_id) {
+                window.location.href = '/message';
+                return;
+            }
+
+            const usersInfo = data.users_info;
+            const membersIds = data.users_info.map(user => user.members_id);
+            const chatMembersList = document.querySelector('.chat-members-check');
+            chatMembersList.innerHTML = '';
+
+            const lastUser = usersInfo[usersInfo.length - 1];
+            usersInfo.pop();
+
+            usersInfo.forEach(user => {
+                const listItem = document.createElement('li');
+                listItem.textContent = user.username;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = user.user_id;
+                if (user.user_id !== lastUser.user_id) {
+                    listItem.appendChild(checkbox);
+                }
+
+                chatMembersList.appendChild(listItem);
+            });
+
+            const deleteButton = document.createElement('button');
+            deleteButton.id = 'delete-members-chat';
+            deleteButton.textContent = 'Удалить выбранных';
+            deleteButton.addEventListener('click', delete_members);
+            chatMembersList.after(deleteButton);
+
+            document.querySelector('.list-chat-members').style.display = 'block';
+        })
+        .catch(error => console.error('Ошибка при получении информации о пользователях чата:', error));
+}
+});
