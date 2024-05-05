@@ -484,3 +484,54 @@ app.post('/create_chat', (req, res) => {
 В этом примере промежуточное ПО устанавливает значение req.userId на основе значения req.session.userId. Если значение req.session.userId не определено, то req.userId устанавливается в null.
 
 Обратите внимание, что этот код является лишь примером того, как можно получить идентификатор пользователя из сессии. Вам может потребоваться внести изменения в код в зависимости от вашей конкретной ситуации.
+
+creator_id: req.userId, // идентификатор создателя чата ты не из сессии опять берешь, перепиши код внимательно
+Извините за путаницу в предыдущем ответе. Вот исправленный код:
+
+app.use(function (req, res, next) {
+  if (req.session.userId) {
+    req.user = req.session.user;
+  } else {
+    req.user = null;
+  }
+
+  next();
+});
+
+app.post('/create_chat', (req, res) => {
+  const { chatName } = req.body;
+
+  // Добавляем чат в базу данных
+  const newChat = {
+    chatName: chatName,
+    creator_id: req.user.id, // идентификатор создателя чата
+    members_id: req.body.participants, // массив участников
+  };
+
+  // подключаемся к базе данных
+  const pool = new Pool();
+  pool.connect((err, client, done) => {
+    if (err) {
+      console.error('Ошибка подключения к базе данных:', err);
+      return;
+    }
+
+    const query = 'INSERT INTO chats (chat_name, creator_id, members_id) VALUES ($1, $2, $3) RETURNING *';
+    const values = [chatName, req.user.id, req.body.participants];
+
+    client.query(query, values, (err, result) => {
+      done();
+      if (err) {
+        console.error('Ошибка добавления чата:', err);
+        return;
+      }
+
+      console.log('Чат успешно добавлен');
+      res.send({ success: true });
+    });
+  });
+});
+В этом примере промежуточное ПО устанавливает значение req.user на основе значения req.session.user. Если значение req.session.user не определено, то req.user устанавливается в null.
+
+Обратите внимание, что этот код является лишь примером того, как можно получить идентификатор пользователя из сессии. Вам может потребоваться внести изменения в код в зависимости от вашей конкретной ситуации.
+
